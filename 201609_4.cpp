@@ -1,129 +1,122 @@
 #include <iostream>
 #include <vector>
-#include <queue>
+#include <stdio.h>
 #include <algorithm>
+#include <set>
+#include <queue>
 #include <functional>
 
 using namespace std;
 
-struct edge
+struct  edge
 {
-	int i;
 	int d;
+	int to;
+
 	edge *next;
 };
 
-struct  node
+
+
+struct node
 {
 	int i;
-	long long int d;
-	int pri;
-	int last_len;
+	int val;
+
+	int pri;	//记录最短路径的前一顶点
+	int pri_len;	//记录前一长度
+
 	edge *next;
+
+	bool operator > (const node temp) const
+	{
+		return val > temp.val;
+	}
 };
 
+node NODE[10000];
+int visit[10000];
 int n, m;
-long long output;
-priority_queue <pair<long long int, int>, vector <pair<long long int, int>>, greater<pair<long long int, int>>> q;
 
-vector <node> head;
-vector <bool> visit;
-bool shorest[10001][10001] = { false };
+int max_int = 0x3f3f3f3f;
 
-int MAXN = 0x3f3f3f3f;
+priority_queue <node, vector<node>, greater<node>> q;  //最小优先队列 存在重复的顶点
 
 void addedge(int a, int b, int c)
 {
 	edge *temp = new edge;
-	temp->i = b;
+	temp->to = b;
 	temp->d = c;
-	temp->next = head[a].next;
-	head[a].next = temp;
+	temp->next = NODE[a].next;
+	NODE[a].next = temp;
 }
 
-void dijkstra()
+
+void dijistra()
 {
-	q.push({ 0,1 });
-	int number;
+	q.push(NODE[0]);
 	while (!q.empty())
 	{
-		number = q.top().second;
+		node num = q.top();
 		q.pop();
-		if (visit[number])
+		//消除重复的顶点
+		if (visit[num.i] == 1)
 			continue;
-		visit[number] = true;
-		edge *ptemp = head[number].next;
-		for (; ptemp; ptemp = ptemp->next)
+		visit[num.i] = 1;
+		for (edge *p = num.next; p; p = p->next)
 		{
-			if (visit[ptemp->i] == false)
+			if (visit[p->to] == 0)
 			{
-				if (head[ptemp->i].d > head[number].d + ptemp->d)
+				if (num.val + p->d < NODE[p->to].val)
 				{
-					head[ptemp->i].d = head[number].d + ptemp->d;
-					head[ptemp->i].pri = number;
-					head[ptemp->i].last_len = ptemp->d;
-					q.push({ head[ptemp->i].d, ptemp->i });
-				}
-				else if (head[ptemp->i].d == head[number].d + ptemp->d)
-				{
-					if (ptemp->d < head[ptemp->i].last_len)
-					{
-						head[ptemp->i].pri = number;
-						head[ptemp->i].last_len = ptemp->d;
-					}
-				}
+					NODE[p->to].val = num.val + p->d;
+					NODE[p->to].pri = num.i;
+					NODE[p->to].pri_len = p->d;
 
+					q.push(NODE[p->to]);
+				}
+				//相同的路径长度，更新最短的
+				else if (num.val + p->d == NODE[p->to].val)
+				{
+					if(NODE[p->to].pri_len>p->d)
+                    {
+                        NODE[p->to].pri = num.i;
+					    NODE[p->to].pri_len = p->d;
+                    }
+				}
 			}
 		}
 	}
 }
+
 
 int main()
 {
-	int tempa, tempb, tempc;
-	cin >> n >> m;
-	for (int i = 0; i <= n; ++i)
+	cin >> n >> m ;
+	int a, b, c;
+	//初始化
+	for (int i = 0; i < n; ++i) 
 	{
-		node temp;
-		temp.next = NULL;
-		temp.i = i;
-		temp.d = MAXN;
-		temp.pri = 0;
-		temp.last_len = MAXN;
-		head.push_back(temp);
-		visit.push_back(false);
+		NODE[i].i = i;
+		NODE[i].val = max_int;
+		NODE[i].next = NULL;
 	}
-	head[1].d = 0;
+	NODE[0].val = 0; //开始点
 	for (int i = 0; i < m; ++i)
 	{
-		cin >> tempa >> tempb >> tempc;
-		addedge(tempa, tempb, tempc);
-		addedge(tempb, tempa, tempc);
+		cin >> a >> b >> c;
+		addedge(a-1, b-1, c);
+		addedge(b-1, a-1, c);
 	}
-	dijkstra();
-	for (int i = 2; i <= n; ++i)
+
+	dijistra();
+
+	int out = 0;
+	for (int i = 1; i < n; ++i)
 	{
-		int to = i;
-		int prior_node;
-		while (true)
-		{
-			prior_node = head[to].pri;
-
-			if (shorest[prior_node][to] == false)
-			{
-				output += head[to].last_len;
-				shorest[prior_node][to] = true;
-			}
-
-			if (prior_node == 1)
-				break;
-			else
-			{
-				to = prior_node;
-			}
-
-		}
+		out += NODE[i].pri_len;
 	}
-	cout << output;
+
+	cout << out << endl;
 	return 0;
 }
